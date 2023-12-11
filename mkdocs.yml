@@ -1,4 +1,4 @@
-site_name: Instructor (openai_function_call)
+site_name: Instructor
 site_author: Jason Liu
 site_description: Enhancing OpenAI function calling with Pydantic 
 repo_name: instructor
@@ -121,15 +121,29 @@ markdown_extensions:
   - pymdownx.tilde
 nav:
   - Introduction: 
-    - Quick Start: 'index.md'
-    - Validators: "reask_validation.md"
-    - Distillation: "distillation.md"
-    - Prompt Engineering Tips: 'tips/index.md'
-    - Philosophy: 'philosophy.md'
+    - Welcome To Instructor: 'index.md'
+    - Why use Instructor?: 'why.md'
+    - Help with Instructor: 'help.md'
+    - Installation: 'installation.md'
+    - Contributing: 'contributing.md'
+  - Tips: 'concepts/prompting.md'
+  - Concepts:
+    - Philosophy: 'concepts/philosophy.md'
+    - Models: 'concepts/models.md'
+    - Fields: 'concepts/fields.md'
+    - Missing: "concepts/maybe.md"
+    - Patching: 'concepts/patching.md'
+    - Streaming: "concepts/lists.md"
+    - FastAPI: 'concepts/fastapi.md'
+    - Caching: 'concepts/caching.md'
+    - Validators: "concepts/reask_validation.md"
+    - Distillation: "concepts/distillation.md"
+    - Types: 'concepts/types.md'
+    - Union: 'concepts/union.md'
+    - Alias: 'concepts/alias.md'
+    - Type Adapter: 'concepts/typeadapter.md'
   - Cookbook:
     - Overview: 'examples/index.md'
-    - Streaming Lists: "examples/multitask.md"
-    - Handling Missing Content: "examples/maybe.md"
     - Text Classification: 'examples/classification.md'
     - Self Critique: 'examples/self_critique.md'
     - Citations: 'examples/exact_citations.md'
@@ -142,6 +156,7 @@ nav:
     - Action Item and Dependency Mapping: 'examples/action_items.md'
     - Multi-File Code Generation: 'examples/gpt-engineer.md'
     - PII Data Sanitization: 'examples/pii.md'
+    - Open Source: 'examples/open_source.md'
   - CLI Reference:
       - "Introduction": "cli/index.md"
       - "Finetuning GPT-3.5": "cli/finetune.md"
@@ -164,11 +179,6 @@ plugins:
             members_order: alphabetical
             allow_inspection: true
             show_bases: true
-  - group:
-      enabled: !ENV CI
-      plugins:
-        - optimize
-        - minify
   - blog:
       enabled: !ENV CI
       blog_dir: "blog"

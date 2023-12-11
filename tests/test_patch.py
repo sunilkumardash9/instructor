@@ -1,85 +1,16 @@
 import functools
+
 import pytest
+from openai import AsyncOpenAI, OpenAI
+from openai.types.chat import ChatCompletionMessage, ChatCompletionMessageParam
+from openai.types.chat.chat_completion_message import FunctionCall
+from openai.types.chat.chat_completion_message_tool_call import (
+    ChatCompletionMessageToolCall,
+    Function,
+)
+
 import instructor
-
-from pydantic import BaseModel, Field, ValidationError, BeforeValidator
-from openai import OpenAI, AsyncOpenAI
-from instructor import llm_validator
-from typing_extensions import Annotated
-
-
-from instructor.patch import is_async, wrap_chatcompletion
-
-client = instructor.patch(OpenAI())
-aclient = instructor.patch(AsyncOpenAI())
-
-
-@pytest.mark.asyncio
-async def test_async_runmodel():
-    class UserExtract(BaseModel):
-        name: str
-        age: int
-
-    model = await aclient.chat.completions.create(
-        model="gpt-3.5-turbo",
-        response_model=UserExtract,
-        messages=[
-            {"role": "user", "content": "Extract jason is 25 years old"},
-        ],
-    )
-    assert isinstance(model, UserExtract), "Should be instance of UserExtract"
-    assert model.name.lower() == "jason"
-    assert hasattr(
-        model, "_raw_response"
-    ), "The raw response should be available from OpenAI"
-
-
-def test_runmodel():
-    class UserExtract(BaseModel):
-        name: str
-        age: int
-
-    model = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        response_model=UserExtract,
-        messages=[
-            {"role": "user", "content": "Extract jason is 25 years old"},
-        ],
-    )
-    assert isinstance(model, UserExtract), "Should be instance of UserExtract"
-    assert model.name.lower() == "jason"
-    assert hasattr(
-        model, "_raw_response"
-    ), "The raw response should be available from OpenAI"
-
-
-def test_runmodel_validator():
-    from pydantic import field_validator
-
-    class UserExtract(BaseModel):
-        name: str
-        age: int
-
-        @field_validator("name")
-        @classmethod
-        def validate_name(cls, v):
-            if v.upper() != v:
-                raise ValueError("Name should be uppercase")
-            return v
-
-    model = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        response_model=UserExtract,
-        max_retries=2,
-        messages=[
-            {"role": "user", "content": "Extract jason is 25 years old"},
-        ],
-    )
-    assert isinstance(model, UserExtract), "Should be instance of UserExtract"
-    assert model.name == "JASON"
-    assert hasattr(
-        model, "_raw_response"
-    ), "The raw response should be available from OpenAI"
+from instructor.patch import OVERRIDE_DOCS, dump_message, is_async, wrap_chatcompletion
 
 
 def test_patch_completes_successfully():
@@ -136,49 +67,110 @@ def test_is_async_returns_true_if_wrapped_function_is_async():
     assert is_async(wrapped_function) is True
 
 
-@pytest.mark.asyncio
-async def test_async_runmodel_validator():
-    aclient = instructor.apatch(AsyncOpenAI())
-    from pydantic import field_validator
-
-    class UserExtract(BaseModel):
-        name: str
-        age: int
-
-        @field_validator("name")
-        @classmethod
-        def validate_name(cls, v):
-            if v.upper() != v:
-                raise ValueError("Name should be uppercase")
-            return v
-
-    model = await aclient.chat.completions.create(
-        model="gpt-3.5-turbo",
-        response_model=UserExtract,
-        max_retries=2,
-        messages=[
-            {"role": "user", "content": "Extract jason is 25 years old"},
-        ],
-    )
-    assert isinstance(model, UserExtract), "Should be instance of UserExtract"
-    assert model.name == "JASON"
-    assert hasattr(
-        model, "_raw_response"
-    ), "The raw response should be available from OpenAI"
+def test_override_docs():
+    assert (
+        "response_model" in OVERRIDE_DOCS
+    ), "response_model should be in OVERRIDE_DOCS"
 
 
-def test_runmodel_validator_error():
-
-
-    class QuestionAnswerNoEvil(BaseModel):
-        question: str
-        answer: Annotated[
-            str,
-            BeforeValidator(llm_validator("don't say objectionable things", openai_client=client))
-        ]
-
-    with pytest.raises(ValidationError):
-        QuestionAnswerNoEvil(
-            question="What is the meaning of life?",
-            answer="The meaning of life is to be evil and steal",
-        )
+@pytest.mark.parametrize(
+    "name_of_test, message, expected",
+    [
+        (
+            "tool_calls and content and no function_call",
+            ChatCompletionMessage(
+                role="assistant",
+                content="Hello, world!",
+                tool_calls=[
+                    ChatCompletionMessageToolCall(
+                        id="test_tool",
+                        function=Function(arguments="", name="test_tool"),
+                        type="function",
+                    )
+                ],
+            ),
+            {
+                "role": "assistant",
+                "content": 'Hello, world![{"id": "test_tool", "function": {"arguments": "", "name": "test_tool"}, "type": "function"}]',
+            },
+        ),
+        (
+            "tool_calls and no content and no function_call",
+            ChatCompletionMessage(
+                role="assistant",
+                content=None,
+                tool_calls=[
+                    ChatCompletionMessageToolCall(
+                        id="test_tool",
+                        function=Function(arguments="", name="test_tool"),
+                        type="function",
+                    )
+                ],
+            ),
+            {
+                "role": "assistant",
+                "content": '[{"id": "test_tool", "function": {"arguments": "", "name": "test_tool"}, "type": "function"}]',
+            },
+        ),
+        (
+            "no tool_calls and no content no function_call",
+            ChatCompletionMessage(
+                role="assistant",
+                content=None,
+            ),
+            {
+                "role": "assistant",
+                "content": "",
+            },
+        ),
+        (
+            "no tool_calls and content and function_call",
+            ChatCompletionMessage(
+                role="assistant",
+                content="Hello, world!",
+                function_call=FunctionCall(arguments="", name="test_tool"),
+            ),
+            {
+                "role": "assistant",
+                "content": 'Hello, world!{"arguments": "", "name": "test_tool"}',
+            },
+        ),
+        (
+            "no tool_calls and no content and function_call",
+            ChatCompletionMessage(
+                role="assistant",
+                content=None,
+                function_call=FunctionCall(arguments="", name="test_tool"),
+            ),
+            {
+                "role": "assistant",
+                "content": '{"arguments": "", "name": "test_tool"}',
+            },
+        ),
+        (
+            "tool_calls and no content and function_call",
+            ChatCompletionMessage(
+                role="assistant",
+                content=None,
+                function_call=FunctionCall(arguments="", name="test_tool"),
+                tool_calls=[
+                    ChatCompletionMessageToolCall(
+                        id="test_tool",
+                        function=Function(arguments="", name="test_tool"),
+                        type="function",
+                    )
+                ],
+            ),
+            {
+                "role": "assistant",
+                "content": '[{"id": "test_tool", "function": {"arguments": "", "name": "test_tool"}, "type": "function"}]{"arguments": "", "name": "test_tool"}',
+            },
+        ),
+    ],
+)
+def test_dump_message(
+    name_of_test: str,
+    message: ChatCompletionMessage,
+    expected: ChatCompletionMessageParam,
+):
+    assert dump_message(message) == expected, name_of_test

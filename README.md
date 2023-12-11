@@ -4,13 +4,15 @@ _Structured extraction in Python, powered by OpenAI's function calling api, desi
 
 ---
 
-[Star us on Github!](www.github.com/jxnl/instructor).
+[Star us on Github!](https://www.github.com/jxnl/instructor)
 
+[![Pydantic v2](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/pydantic/pydantic/main/docs/badge/v2.json)](https://pydantic.dev)
 [![Downloads](https://img.shields.io/pypi/dm/instructor.svg)](https://pypi.python.org/pypi/instructor)
 [![GitHub stars](https://img.shields.io/github/stars/jxnl/instructor.svg)](https://github.com/jxnl/instructor/stargazers)
 [![Documentation](https://img.shields.io/badge/docs-available-brightgreen)](https://jxnl.github.io/instructor)
-[![GitHub issues](https://img.shields.io/github/issues/jxnl/instructor.svg)](https://github.com/jxnl/instructor/issues)
 [![Twitter Follow](https://img.shields.io/twitter/follow/jxnlco?style=social)](https://twitter.com/jxnlco)
+[![Coverage Status](https://coveralls.io/repos/github/jxnl/instructor/badge.svg?branch=add-coveralls)](https://coveralls.io/github/jxnl/instructor?branch=add-coveralls)
+[![Instructor](https://img.shields.io/badge/instructor-blog-blue)](https://jxnl.github.io/instructor/blog/)
 
 Dive into the world of Python-based structured extraction, empowered by OpenAI's cutting-edge function calling API. Instructor stands out for its simplicity, transparency, and user-centric design. Whether you're a seasoned developer or just starting out, you'll find Instructor's approach intuitive and its results insightful.
 
@@ -36,8 +38,9 @@ With Instructor, your code becomes more efficient and readable. Here’s a quick
 ## Usage
 
 ```py hl_lines="5 13"
-from openai import OpenAI
 import instructor
+from openai import OpenAI
+from pydantic import BaseModel
 
 # Enables `response_model`
 client = instructor.patch(OpenAI())
@@ -83,6 +86,7 @@ For async clients you must use apatch vs patch like so:
 ```py
 import instructor
 from openai import AsyncOpenAI
+from pydantic import BaseModel
 
 aclient = instructor.apatch(AsyncOpenAI())
 
@@ -214,9 +218,23 @@ model = client.chat.completions.create(
 assert model.name == "JASON"
 ```
 
+## [Evals](https://github.com/jxnl/instructor/tree/main/tests/openai/evals)
+
+We invite you to contribute evals in pytest as a way to monitor the quality of the openai models and the instructor library. To get started check out the [jxnl/instructor/tests/evals](https://github.com/jxnl/instructor/tree/main/tests/openai/evals) and contribute your own evals in the form of pytest tests. These evals will be run once a week and the results will be posted.
+
 ## Contributing
 
 If you want to help out checkout some of the issues marked as `good-first-issue` or `help-wanted`. Found [here](https://github.com/jxnl/instructor/labels/good%20first%20issue). They could be anything from code improvements, a guest blog post, or a new cook book.
+
+## CLI 
+
+We also provide some added CLI functionality for easy convinience
+
+- `instructor jobs` : This helps with the creation of fine-tuning jobs with OpenAI. Simple use `instructor jobs create-from-file --help` to get started creating your first fine-tuned GPT3.5 model
+
+- `instructor files` : Manage your uploaded files with ease. You'll be able to create, delete and upload files all from the command line
+
+- `instructor usage` : Instead of heading to the OpenAI site each time, you can monitor your usage from the cli and filter by date and time period. Note that usage often takes ~5-10 minutes to update from OpenAI's side
 
 ## License
 
